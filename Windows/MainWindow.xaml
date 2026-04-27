@@ -16,6 +16,7 @@
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -28,7 +29,42 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Margin="20,8,20,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Click="OnAddEventClick" ToolTipService.ToolTip="הוסף אירוע חדש">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon Glyph="&#xE710;" FontSize="13"/>
+                    <TextBlock Text="אירוע חדש"/>
+                </StackPanel>
+            </Button>
+
+            <Border Grid.Column="1"
+                    CornerRadius="14"
+                    Background="{ThemeResource ControlFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                    BorderThickness="1"
+                    Padding="2"
+                    HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <ToggleButton x:Name="DailyViewToggle"
+                                  Content="יומי"
+                                  Style="{StaticResource SegmentedToggleStyle}"
+                                  Click="OnSegToggleClick"/>
+                    <ToggleButton x:Name="MonthlyViewToggle"
+                                  Content="חודשי"
+                                  Style="{StaticResource SegmentedToggleStyle}"
+                                  IsChecked="True"
+                                  Click="OnSegToggleClick"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="MonthlyContentGrid" Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="340"/>
@@ -264,6 +300,92 @@
                     </ScrollViewer>
                 </Grid>
             </Border>
+        </Grid>
+
+        <Grid x:Name="DailyContentGrid" Grid.Row="2" Visibility="Collapsed" Margin="20,8,20,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Click="OnDailyPrev" Width="40" Height="40" Padding="0">
+                    <FontIcon Glyph="&#xE76C;" FontSize="14"/>
+                </Button>
+
+                <Button Grid.Column="1" Click="OnDailyToday"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        Padding="10,6">
+                    <StackPanel>
+                        <TextBlock x:Name="DailyHeb"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="DailyGreg"
+                                   Style="{ThemeResource BodyTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock x:Name="DailyDow"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="2" Click="OnDailyNext" Width="40" Height="40" Padding="0" Margin="6,0,0,0">
+                    <FontIcon Glyph="&#xE76B;" FontSize="14"/>
+                </Button>
+            </Grid>
+
+            <Border Grid.Row="1"
+                    Background="{ThemeResource AccentFillColorDefaultBrush}"
+                    CornerRadius="10"
+                    Margin="0,0,0,12"
+                    Padding="20,14">
+                <StackPanel Spacing="3" HorizontalAlignment="Center">
+                    <TextBlock x:Name="DailyHeaderHeb"
+                               Style="{ThemeResource TitleTextBlockStyle}"
+                               FontWeight="SemiBold"
+                               HorizontalAlignment="Center"
+                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
+                    <TextBlock x:Name="DailyHeaderGreg"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               HorizontalAlignment="Center"
+                               Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                               Opacity="0.85"/>
+                </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                    <StackPanel x:Name="DailyEventsSection" Spacing="6" Visibility="Collapsed">
+                        <TextBlock Text="אירועים ביום זה"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                   Margin="4,0,4,2"/>
+                        <StackPanel x:Name="DailyEventsPanel" Spacing="6"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="DailyZmanimSection" Spacing="6">
+                        <TextBlock Text="זמני היום"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                   Margin="4,8,4,2"/>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14,4">
+                            <StackPanel x:Name="DailyZmanimPanel"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </Window>

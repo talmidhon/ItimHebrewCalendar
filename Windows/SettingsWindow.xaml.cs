@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using ItimHebrewCalendar.Models;
 using ItimHebrewCalendar.Services;
 
 namespace ItimHebrewCalendar.Windows
@@ -101,6 +104,22 @@ namespace ItimHebrewCalendar.Windows
             UseSunsetDateTransition = original.UseSunsetDateTransition,
             ZmanimSource = original.ZmanimSource,
             ShowSecondTempleTimer = original.ShowSecondTempleTimer,
+            DefaultMainView = original.DefaultMainView,
+            DefaultTrayView = original.DefaultTrayView,
+            StandaloneZmanReminders = original.StandaloneZmanReminders
+                .Select(r => new Models.StandaloneZmanReminder
+                {
+                    Id = r.Id,
+                    Label = r.Label,
+                    Zman = r.Zman,
+                    OffsetMinutes = r.OffsetMinutes,
+                    ActiveDays = r.ActiveDays,
+                    SkipShabbatYomTov = r.SkipShabbatYomTov,
+                    Enabled = r.Enabled
+                }).ToList(),
+            WindowsCalendarSyncEnabled = original.WindowsCalendarSyncEnabled,
+            IcsExportMonthsAhead = original.IcsExportMonthsAhead,
+            MissedReminderLookbackHours = original.MissedReminderLookbackHours,
         };
 
         private void PopulateControls()
@@ -178,6 +197,11 @@ namespace ItimHebrewCalendar.Windows
                 _zmanimChecks.Add((opt.Flag, cb));
                 ZmanimChecksPanel.Children.Add(cb);
             }
+
+            SelectComboByTag(DefaultMainViewCombo, _workingCopy.DefaultMainView.ToString());
+            SelectComboByTag(DefaultTrayViewCombo, _workingCopy.DefaultTrayView.ToString());
+            WindowsCalendarSyncToggle.IsOn = _workingCopy.WindowsCalendarSyncEnabled;
+            RebuildStandaloneRemindersUi();
 
             try
             {
@@ -265,8 +289,21 @@ namespace ItimHebrewCalendar.Windows
             }
             _workingCopy.ZmanimToShow = flags;
 
+            if (DefaultMainViewCombo.SelectedItem is ComboBoxItem mvi
+                && mvi.Tag is string mvTag
+                && Enum.TryParse<CalendarViewMode>(mvTag, out var mv))
+                _workingCopy.DefaultMainView = mv;
+
+            if (DefaultTrayViewCombo.SelectedItem is ComboBoxItem tvi
+                && tvi.Tag is string tvTag
+                && Enum.TryParse<CalendarViewMode>(tvTag, out var tv))
+                _workingCopy.DefaultTrayView = tv;
+
+            _workingCopy.WindowsCalendarSyncEnabled = WindowsCalendarSyncToggle.IsOn;
+
             SettingsManager.Save(_workingCopy);
             App.Settings = _workingCopy;
+            ReminderHostService.OnSettingsChanged();
             StartupHelper.SetEnabled(_workingCopy.StartWithWindows);
 
             Close();
@@ -287,6 +324,165 @@ namespace ItimHebrewCalendar.Windows
             catch (Exception ex)
             {
                 SettingsManager.LogError("SettingsWindow.LoadAbayeLogo", ex);
+            }
+        }
+
+        // ─── Standalone zman reminders ─────────────────────────────────────────────
+
+        private void OnAddStandaloneReminder(object sender, RoutedEventArgs e)
+        {
+            _workingCopy.StandaloneZmanReminders.Add(new StandaloneZmanReminder
+            {
+                Label = "",
+                Zman = ZmanimKey.SofZmanShma,
+                OffsetMinutes = -10,
+                ActiveDays = DaysOfWeek.All,
+                Enabled = true
+            });
+            RebuildStandaloneRemindersUi();
+        }
+
+        private void RebuildStandaloneRemindersUi()
+        {
+            StandaloneRemindersPanel.Children.Clear();
+            for (int i = 0; i < _workingCopy.StandaloneZmanReminders.Count; i++)
+            {
+                int idx = i;
+                StandaloneRemindersPanel.Children.Add(BuildStandaloneCard(_workingCopy.StandaloneZmanReminders[idx], idx));
+            }
+        }
+
+        private Border BuildStandaloneCard(StandaloneZmanReminder r, int index)
+        {
+            var sp = new StackPanel { Spacing = 6 };
+
+            var headerGrid = new Grid();
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var enabledCheck = new CheckBox { Content = "פעיל", IsChecked = r.Enabled };
+            enabledCheck.Checked   += (_, _) => r.Enabled = true;
+            enabledCheck.Unchecked += (_, _) => r.Enabled = false;
+            Grid.SetColumn(enabledCheck, 0);
+            headerGrid.Children.Add(enabledCheck);
+            var rmBtn = new Button
+            {
+                Content = new FontIcon { Glyph = "", FontSize = 12 },
+                Padding = new Thickness(8, 4, 8, 4)
+            };
+            rmBtn.Click += (_, _) =>
+            {
+                _workingCopy.StandaloneZmanReminders.RemoveAt(index);
+                RebuildStandaloneRemindersUi();
+            };
+            Grid.SetColumn(rmBtn, 1);
+            headerGrid.Children.Add(rmBtn);
+            sp.Children.Add(headerGrid);
+
+            var labelBox = new TextBox
+            {
+                Header = "תווית (אופציונלי)",
+                Text = r.Label,
+                PlaceholderText = "למשל: סוף זמן ק\"ש"
+            };
+            labelBox.TextChanged += (_, _) => r.Label = labelBox.Text;
+            sp.Children.Add(labelBox);
+
+            var grid = new Grid();
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            var zmanCombo = new ComboBox { Header = "זמן הלכתי", HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 0, 4, 0) };
+            int sel = 0, i = 0;
+            foreach (ZmanimKey k in Enum.GetValues<ZmanimKey>())
+            {
+                zmanCombo.Items.Add(new ComboBoxItem { Content = ReminderScheduler.GetZmanLabel(k), Tag = k });
+                if (k == r.Zman) sel = i;
+                i++;
+            }
+            zmanCombo.SelectedIndex = sel;
+            zmanCombo.SelectionChanged += (_, _) =>
+            {
+                if (zmanCombo.SelectedItem is ComboBoxItem ci && ci.Tag is ZmanimKey k)
+                    r.Zman = k;
+            };
+            Grid.SetColumn(zmanCombo, 0);
+            grid.Children.Add(zmanCombo);
+
+            var offsetBox = new NumberBox
+            {
+                Header = "היסט (דק')",
+                Value = r.OffsetMinutes,
+                SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
+                Margin = new Thickness(4, 0, 0, 0)
+            };
+            offsetBox.ValueChanged += (_, ev) =>
+            {
+                if (!double.IsNaN(ev.NewValue)) r.OffsetMinutes = (int)ev.NewValue;
+            };
+            Grid.SetColumn(offsetBox, 1);
+            grid.Children.Add(offsetBox);
+            sp.Children.Add(grid);
+
+            var skipShabbat = new CheckBox { Content = "דלג בשבת ובחגים", IsChecked = r.SkipShabbatYomTov };
+            skipShabbat.Checked   += (_, _) => r.SkipShabbatYomTov = true;
+            skipShabbat.Unchecked += (_, _) => r.SkipShabbatYomTov = false;
+            sp.Children.Add(skipShabbat);
+
+            return new Border
+            {
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(12, 10, 12, 10),
+                Background = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"],
+                BorderBrush = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"],
+                BorderThickness = new Thickness(1),
+                Child = sp
+            };
+        }
+
+        private static void SelectComboByTag(ComboBox combo, string tag)
+        {
+            for (int i = 0; i < combo.Items.Count; i++)
+            {
+                if (combo.Items[i] is ComboBoxItem ci && (ci.Tag as string) == tag)
+                {
+                    combo.SelectedIndex = i;
+                    return;
+                }
+            }
+            if (combo.Items.Count > 0) combo.SelectedIndex = 0;
+        }
+
+        // ─── ICS placeholder handlers ──────────────────────────────────────────────
+
+        private async void OnExportIcs(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var path = await IcsService.PickSaveAsync(this);
+                if (string.IsNullOrEmpty(path)) return;
+                var count = IcsService.Export(path, _workingCopy.IcsExportMonthsAhead, _workingCopy.GetEffectiveLocation());
+                IcsStatusText.Text = $"יוצאו {count} אירועים אל {path}";
+            }
+            catch (Exception ex)
+            {
+                SettingsManager.LogError("SettingsWindow.OnExportIcs", ex);
+                IcsStatusText.Text = "שגיאה בייצוא: " + ex.Message;
+            }
+        }
+
+        private async void OnImportIcs(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var path = await IcsService.PickOpenAsync(this);
+                if (string.IsNullOrEmpty(path)) return;
+                var count = IcsService.Import(path);
+                IcsStatusText.Text = $"יובאו {count} אירועים חדשים מ-{path}";
+            }
+            catch (Exception ex)
+            {
+                SettingsManager.LogError("SettingsWindow.OnImportIcs", ex);
+                IcsStatusText.Text = "שגיאה ביבוא: " + ex.Message;
             }
         }
 

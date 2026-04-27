@@ -55,6 +55,12 @@ namespace ItimHebrewCalendar
 
             RegisterSecondInstanceListener();
 
+            try { ReminderHostService.Start(); }
+            catch (Exception ex) { TryLogError(ex); }
+
+            try { WindowsCalendarSyncService.Start(); }
+            catch (Exception ex) { TryLogError(ex); }
+
             var cmdArgs = Environment.GetCommandLineArgs();
             bool silentStart = cmdArgs.Length > 1 && cmdArgs[1].Equals("--tray", StringComparison.OrdinalIgnoreCase);
             if (!silentStart)
