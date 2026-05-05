@@ -195,6 +195,14 @@
                         <ToggleSwitch x:Name="ShowHebInTrayToggle"
                                       Header="הצג תאריך עברי באייקון ה-tray"
                                       OnContent="מופעל" OffContent="כבוי"/>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="סגנון אייקון ה-tray"/>
+                            <ComboBox x:Name="TrayStyleCombo"
+                                      HorizontalAlignment="Stretch">
+                                <ComboBoxItem Content="ריבוע צבעוני (Win11)" Tag="Tile"/>
+                                <ComboBoxItem Content="טקסט בלבד" Tag="TextOnly"/>
+                            </ComboBox>
+                        </StackPanel>
                         <ToggleSwitch x:Name="CloseOnFocusLossToggle"
                                       Header="סגור את חלונית ה-tray כשהיא מאבדת פוקוס"
                                       OnContent="נסגרת אוטומטית בלחיצה מחוץ לחלונית"

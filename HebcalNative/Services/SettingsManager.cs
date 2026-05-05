@@ -42,6 +42,12 @@ namespace ItimHebrewCalendar.Services
         Hebcal
     }
 
+    public enum TrayIconStyle
+    {
+        Tile,
+        TextOnly
+    }
+
     public class AppSettings
     {
         public string CityName { get; set; } = "ירושלים";
@@ -58,6 +64,9 @@ namespace ItimHebrewCalendar.Services
         public bool ShowGregorianInCalendar { get; set; } = true;
         public bool StartWithWindows { get; set; } = true;
         public bool ShowHebrewDateInTray { get; set; } = true;
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public TrayIconStyle TrayIconStyle { get; set; } = TrayIconStyle.Tile;
         public bool CloseTrayPopupOnFocusLoss { get; set; } = true;
         public bool ShowModernHolidays { get; set; } = false;
         public bool UseSunsetDateTransition { get; set; } = false;

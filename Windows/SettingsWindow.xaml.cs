@@ -95,6 +95,7 @@ namespace ItimHebrewCalendar.Windows
             ShowGregorianInCalendar = original.ShowGregorianInCalendar,
             StartWithWindows = original.StartWithWindows,
             ShowHebrewDateInTray = original.ShowHebrewDateInTray,
+            TrayIconStyle = original.TrayIconStyle,
             CloseTrayPopupOnFocusLoss = original.CloseTrayPopupOnFocusLoss,
             ShowModernHolidays = original.ShowModernHolidays,
             UseSunsetDateTransition = original.UseSunsetDateTransition,
@@ -148,6 +149,17 @@ namespace ItimHebrewCalendar.Windows
 
             ShowGregToggle.IsOn = _workingCopy.ShowGregorianInCalendar;
             ShowHebInTrayToggle.IsOn = _workingCopy.ShowHebrewDateInTray;
+
+            for (int i = 0; i < TrayStyleCombo.Items.Count; i++)
+            {
+                if (TrayStyleCombo.Items[i] is ComboBoxItem c
+                    && (string)c.Tag! == _workingCopy.TrayIconStyle.ToString())
+                {
+                    TrayStyleCombo.SelectedIndex = i;
+                    break;
+                }
+            }
+            if (TrayStyleCombo.SelectedIndex < 0) TrayStyleCombo.SelectedIndex = 0;
             CloseOnFocusLossToggle.IsOn = _workingCopy.CloseTrayPopupOnFocusLoss;
             ShowTempleTimerToggle.IsOn = _workingCopy.ShowSecondTempleTimer;
 
@@ -234,6 +246,13 @@ namespace ItimHebrewCalendar.Windows
             }
             _workingCopy.ShowGregorianInCalendar = ShowGregToggle.IsOn;
             _workingCopy.ShowHebrewDateInTray = ShowHebInTrayToggle.IsOn;
+
+            if (TrayStyleCombo.SelectedItem is ComboBoxItem tsi
+                && tsi.Tag is string tsTag
+                && Enum.TryParse<TrayIconStyle>(tsTag, out var ts))
+            {
+                _workingCopy.TrayIconStyle = ts;
+            }
             _workingCopy.CloseTrayPopupOnFocusLoss = CloseOnFocusLossToggle.IsOn;
             _workingCopy.ShowSecondTempleTimer = ShowTempleTimerToggle.IsOn;
             _workingCopy.Theme = GetSelectedTheme();

@@ -210,12 +210,16 @@ namespace ItimHebrewCalendar.Windows
                 var (today, afterSunset) = HebcalBridge.GetHalachicToday(loc, settings.UseSunsetDateTransition);
                 if (today == null) return;
 
+                // Geresh/gershayim are correct typography for the tooltip but read as
+                // visual noise at 32px; strip them so the glyph can be drawn larger.
                 var text = settings.ShowHebrewDateInTray
-                    ? today.DayStr
+                    ? today.DayStr.Replace("\"", "").Replace("'", "")
+                        .Replace("׳", "").Replace("״", "")
                     : DateTime.Today.Day.ToString();
 
-                // afterSunset is part of the cache key so the icon redraws when crossing sunset.
-                var cacheKey = $"{text}|{afterSunset}";
+                // afterSunset and the style are part of the cache key so the icon
+                // redraws when crossing sunset or when the user picks a new style.
+                var cacheKey = $"{text}|{afterSunset}|{settings.TrayIconStyle}";
                 if (cacheKey == _lastDateStr) return;
                 _lastDateStr = cacheKey;
 
@@ -227,7 +231,8 @@ namespace ItimHebrewCalendar.Windows
                     try { TrayIconRenderer.DestroyIcon(oldHandle); } catch { }
                 }
 
-                _currentIcon = TrayIconRenderer.Render(text, ThemeHelper.IsSystemDarkMode(), afterSunset);
+                _currentIcon = TrayIconRenderer.Render(
+                    text, ThemeHelper.IsSystemDarkMode(), afterSunset, settings.TrayIconStyle);
 
                 _trayIcon.UpdateIcon(_currentIcon.Handle);
 

@@ -125,7 +125,7 @@ ItimHebrewCalendar/
 │   ├── WindowHelpers.cs             Mica, custom title bar, sizing, positioning
 │   ├── CellTheme.cs                 calendar cell brushes
 │   ├── TrayIconController.cs        H.NotifyIcon wiring + UI dispatcher
-│   ├── TrayIconRenderer.cs          GDI+ calendar-page icon
+│   ├── TrayIconRenderer.cs          GDI+ Win11-style solid tray tile
 │   ├── DayDetailsRenderer.cs        shared day-detail rendering helper
 │   ├── CalendarPopup.xaml(.cs)      tray popup with inline day details
 │   ├── MainWindow.xaml(.cs)         full main window with side details panel
