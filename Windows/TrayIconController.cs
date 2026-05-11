@@ -15,7 +15,7 @@ namespace ItimHebrewCalendar.Windows
         private ConverterWindow? _converterWindow;
         private ZmanimWindow? _zmanimWindow;
 
-        private System.Threading.Timer? _refreshTimer;
+        private DispatcherQueueTimer? _refreshTimer;
         private string _lastDateStr = "";
         private Icon? _currentIcon;
 
@@ -54,10 +54,18 @@ namespace ItimHebrewCalendar.Windows
             UpdateIcon();
             _trayIcon.Create();
 
-            _refreshTimer = new System.Threading.Timer(_ =>
+            // DispatcherQueueTimer ticks directly on the UI thread, so the
+            // refresh path no longer goes through TryEnqueue and can't be
+            // rejected by a transient dispatcher state (sleep/wake, lock screen).
+            _refreshTimer = _uiDispatcher.CreateTimer();
+            _refreshTimer.Interval = TimeSpan.FromMinutes(1);
+            _refreshTimer.IsRepeating = true;
+            _refreshTimer.Tick += (_, _) =>
             {
-                RunOnUI(UpdateIcon);
-            }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+                try { UpdateIcon(); }
+                catch (Exception ex) { SettingsManager.LogError("Tray refresh tick", ex); }
+            };
+            _refreshTimer.Start();
         }
 
         private void OnTrayMouseEvent(object? sender, H.NotifyIcon.Core.MessageWindow.MouseEventReceivedEventArgs e)
@@ -107,17 +115,32 @@ namespace ItimHebrewCalendar.Windows
                 return;
             }
 
-            var queued = _uiDispatcher.TryEnqueue(() =>
+            if (TryEnqueueAction(action)) return;
+
+            // TryEnqueue rejected the action - almost always a transient state
+            // (sleep/wake, lock screen, brief window teardown). Retry once after
+            // a short delay so the action isn't silently dropped, and log only
+            // if the second attempt also fails (a genuinely stuck dispatcher).
+            _ = System.Threading.Tasks.Task.Run(async () =>
+            {
+                await System.Threading.Tasks.Task.Delay(250).ConfigureAwait(false);
+                if (!TryEnqueueAction(action))
+                {
+                    SettingsManager.LogError(
+                        "Tray dispatch",
+                        new InvalidOperationException(
+                            "UI dispatcher rejected the action twice in 250ms; dropping it"));
+                }
+            });
+        }
+
+        private bool TryEnqueueAction(Action action)
+        {
+            return _uiDispatcher.TryEnqueue(() =>
             {
                 try { action(); }
                 catch (Exception ex) { SettingsManager.LogError("Tray dispatched", ex); }
             });
-
-            if (!queued)
-            {
-                SettingsManager.LogError("Tray dispatch",
-                    new InvalidOperationException("TryEnqueue returned false - dispatcher rejected the action"));
-            }
         }
 
         private void TogglePopup()
@@ -256,7 +279,7 @@ namespace ItimHebrewCalendar.Windows
 
         public void Dispose()
         {
-            _refreshTimer?.Dispose();
+            _refreshTimer?.Stop();
             _refreshTimer = null;
 
             _trayIcon?.Dispose();
