@@ -209,7 +209,7 @@
                                       OnContent="נסגרת אוטומטית בלחיצה מחוץ לחלונית"
                                       OffContent="נסגרת רק בלחיצה על האייקון או על ה-X"/>
                         <ToggleSwitch x:Name="ShowTempleTimerToggle"
-                                      Header="הצג את הזמן שעבר מחורבן בית המקדש השני"
+                                      Header="הצג את הזמן שעבר מחורבן הבית"
                                       OnContent="מוצג בכרטיס היום ובטול-טיפ של ה-tray"
                                       OffContent="מוסתר"/>
                     </StackPanel>

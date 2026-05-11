@@ -128,7 +128,7 @@ namespace ItimHebrewCalendar.Services
             return (heb != null && heb.HebMonth == month) ? 30 : 29;
         }
 
-        // "חלפו 1955 שנים, 9 חודשים ו-27 ימים מחורבן בית המקדש השני"
+        // "חלפו 1955 שנים, 9 חודשים ו-27 ימים מחורבן הבית"
         public static string FormatCompact(SecondTempleInterval i)
         {
             var parts = new List<string>();
@@ -136,7 +136,7 @@ namespace ItimHebrewCalendar.Services
             if (i.Months > 0) parts.Add(FormatUnit(i.Months, "חודש אחד", "חודשים"));
             if (i.Days > 0)   parts.Add(FormatUnit(i.Days,   "יום אחד",  "ימים"));
             if (parts.Count == 0) parts.Add("פחות מיממה");
-            return $"חלפו {JoinHebrew(parts)} מחורבן בית המקדש השני";
+            return $"חלפו {JoinHebrew(parts)} מחורבן הבית";
         }
 
         // Compact + hours/minutes since last Jerusalem sunset.
@@ -149,7 +149,7 @@ namespace ItimHebrewCalendar.Services
             if (i.Hours > 0)   parts.Add(FormatUnit(i.Hours,   "שעה אחת",  "שעות"));
             if (i.Minutes > 0) parts.Add(FormatUnit(i.Minutes, "דקה אחת",  "דקות"));
             if (parts.Count == 0) parts.Add("פחות מדקה");
-            return $"חלפו {JoinHebrew(parts)} מחורבן בית המקדש השני";
+            return $"חלפו {JoinHebrew(parts)} מחורבן הבית";
         }
 
         private static string FormatUnit(int n, string singular, string pluralWord) =>
