@@ -117,7 +117,7 @@
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </StackPanel>
-                        <TextBlock Text="המיקום משפיע על חישוב זמני היום ההלכתיים ועל זמני הדלקת הנרות."
+                        <TextBlock Text="המיקום משפיע על חישוב זמני היום בהלכה ועל זמני הדלקת הנרות."
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"/>
@@ -377,7 +377,7 @@
                                        Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
                             <StackPanel Spacing="1">
-                                <TextBlock Text="זמני היום ההלכתיים: KosherJava Zmanim (ברירת מחדל)"
+                                <TextBlock Text="זמני היום בהלכה: KosherJava Zmanim (ברירת מחדל)"
                                            Style="{ThemeResource BodyTextBlockStyle}"/>
                                 <TextBlock Text="מאת Eliyahu Hershfeld · פורק ל-.NET מאת Yitzchok ברישיון LGPL"
                                            Style="{ThemeResource CaptionTextBlockStyle}"

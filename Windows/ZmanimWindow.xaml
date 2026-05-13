@@ -24,7 +24,7 @@
                         Width="18"
                         Height="18"
                         VerticalAlignment="Center"/>
-                <TextBlock Text="זמני היום ההלכתיים"
+                <TextBlock Text="זמני היום בהלכה"
                            Style="{ThemeResource CaptionTextBlockStyle}"
                            VerticalAlignment="Center"/>
             </StackPanel>
@@ -32,7 +32,7 @@
 
         <StackPanel Grid.Row="1"
                 Margin="24,16,24,8">
-            <TextBlock Text="זמני היום ההלכתיים"
+            <TextBlock Text="זמני היום בהלכה"
                        Style="{ThemeResource TitleTextBlockStyle}"/>
             <TextBlock x:Name="TxtSubtitle"
                        Style="{ThemeResource BodyTextBlockStyle}"

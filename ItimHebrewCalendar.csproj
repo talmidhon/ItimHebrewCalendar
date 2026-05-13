@@ -25,7 +25,7 @@
 
     <AssemblyTitle>ItimHebrewCalendar</AssemblyTitle>
     <Product>ItimHebrewCalendar</Product>
-    <Description>לוח שנה עברי עם זמני היום ההלכתיים</Description>
+    <Description>לוח שנה עברי עם זמני היום בהלכה</Description>
     <Copyright>Copyright © 2026</Copyright>
 
     <!-- Disables WinUI's auto-generated Main so Program.cs is used as the entry point. -->
