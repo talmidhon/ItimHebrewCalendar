@@ -1,0 +1,39 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # מאפשר להריץ את הבנייה ידנית
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.21'
+
+    - name: Build Native DLL (Go)
+      shell: cmd
+      run: |
+        cd HebcalNative
+        call build-hebcal-dll.bat
+
+    - name: Build App (.NET)
+      run: dotnet publish ItimHebrewCalendar.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishReadyToRun=true
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ItimHebrewCalendar-Executable
+        path: bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/ItimHebrewCalendar.exe
