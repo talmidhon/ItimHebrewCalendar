@@ -575,9 +575,7 @@ namespace ItimHebrewCalendar.Windows
                 var headerHeb  = $"{HebrewNumberFormatter.FormatDay(hd.HebDay)} ב{hd.MonthName} {HebrewNumberFormatter.FormatYear(hd.HebYear)}";
                 var headerGreg = _dailyDate.ToString("d בMMMM yyyy", ci);
                 DailyHeaderHeb.Text  = headerHeb;
-                DailyHeaderGreg.Text = headerGreg;
-                DailyHeb.Text  = headerHeb;
-                DailyGreg.Text = _dailyDate.ToString("dddd · d בMMMM", ci);
+                DailyHeaderGreg.Text = $"{_dailyDate.ToString("dddd", ci)} · {headerGreg}";
 
                 var settings = App.Settings;
                 var monthData = HebcalBridge.GetMonth(_dailyDate.Year, _dailyDate.Month,

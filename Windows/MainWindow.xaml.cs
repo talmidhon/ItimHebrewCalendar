@@ -532,8 +532,6 @@ namespace ItimHebrewCalendar.Windows
                 var headerGreg = _dailyDate.ToString("d בMMMM yyyy", ci);
                 DailyHeaderHeb.Text = headerHeb;
                 DailyHeaderGreg.Text = headerGreg;
-                DailyHeb.Text  = headerHeb;
-                DailyGreg.Text = headerGreg;
                 DailyDow.Text  = _dailyDate.ToString("dddd", ci);
 
                 // Build a CalendarDay-like wrapper using hebcal's monthly data so events are populated.
