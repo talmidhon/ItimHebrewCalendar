@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     branches: [ "main" ]
-  workflow_dispatch: # מאפשר להריץ את הבנייה ידנית
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -30,10 +30,10 @@ jobs:
         call build-hebcal-dll.bat
 
     - name: Build App (.NET)
-      run: dotnet publish ItimHebrewCalendar.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishReadyToRun=true
+      run: dotnet publish ItimHebrewCalendar.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:PublishReadyToRun=true /p:EnableMsixTooling=true
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ItimHebrewCalendar-Executable
-        path: bin/Release/net8.0-windows10.0.19041.0/win-x64/publish/ItimHebrewCalendar.exe
+        name: ItimHebrewCalendar-Release-Package
+        path: "**/win-x64/publish/*"
