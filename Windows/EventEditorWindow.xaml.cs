@@ -57,19 +57,122 @@ namespace ItimHebrewCalendar.Windows
 
         // ─── Populate ──────────────────────────────────────────────────────────────
 
+        private const int YearLookaheadCount = 10;
+
+        // Cache so flipping months/years doesn't re-cross the marshal boundary every time.
+        private static readonly Dictionary<(int year, int month), bool> Day30Cache = new();
+
         private void PopulateHebrewControls()
         {
-            HebDayCombo.Items.Clear();
-            for (int d = 1; d <= 30; d++)
-                HebDayCombo.Items.Add(new ComboBoxItem { Content = HebrewNumberFormatter.FormatDay(d), Tag = d });
-
             HebMonthCombo.Items.Clear();
             for (int m = 1; m <= 13; m++)
                 HebMonthCombo.Items.Add(new ComboBoxItem { Content = HebrewMonthNames[m], Tag = m });
 
-            HebYearBox.Minimum = 5000;
-            HebYearBox.Maximum = 6000;
-            HebYearBox.Value = 5786;
+            PopulateYearCombo();
+            PopulateDayCombo(allow30: true);
+        }
+
+        private void PopulateYearCombo()
+        {
+            int current = GetCurrentHebrewYear();
+            int eventYear = _event.StartHebrew?.Year ?? current;
+            int start = Math.Min(current, eventYear);
+            int end = Math.Max(current + YearLookaheadCount, eventYear);
+
+            HebYearCombo.Items.Clear();
+            for (int y = start; y <= end; y++)
+                HebYearCombo.Items.Add(new ComboBoxItem { Content = FormatYearShort(y), Tag = y });
+        }
+
+        private static int GetCurrentHebrewYear()
+        {
+            try
+            {
+                var today = HebcalBridge.Convert(DateTime.Today);
+                if (today != null) return today.HebYear;
+            }
+            catch (Exception ex) { SettingsManager.LogError("GetCurrentHebrewYear", ex); }
+            return 5786;
+        }
+
+        private void PopulateDayCombo(bool allow30)
+        {
+            int? prev = TagAsInt(HebDayCombo);
+            int max = allow30 ? 30 : 29;
+
+            HebDayCombo.Items.Clear();
+            for (int d = 1; d <= max; d++)
+                HebDayCombo.Items.Add(new ComboBoxItem { Content = HebrewNumberFormatter.FormatDay(d), Tag = d });
+
+            if (prev.HasValue && prev.Value >= 1 && prev.Value <= max)
+                SelectByTag(HebDayCombo, prev.Value);
+        }
+
+        private void RefreshDayCombo()
+        {
+            int? month = TagAsInt(HebMonthCombo);
+            int? year  = TagAsInt(HebYearCombo);
+            if (!month.HasValue || !year.HasValue) return;
+            PopulateDayCombo(allow30: MonthHasDay30(year.Value, month.Value));
+        }
+
+        // Computed without poking the Hebcal DLL with an out-of-range day — some
+        // native paths panic instead of returning an empty result, which kills the
+        // whole process with no managed exception to log.
+        public static bool MonthHasDay30(int year, int month)
+        {
+            if (Day30Cache.TryGetValue((year, month), out var cached)) return cached;
+
+            bool has = month switch
+            {
+                1 or 3 or 5 or 7 or 11 => true,        // Nisan, Sivan, Av, Tishrei, Shvat — always 30
+                2 or 4 or 6 or 10 or 13 => false,      // Iyar, Tammuz, Elul, Tevet, Adar II — always 29
+                12 => IsHebrewLeapYear(year),          // Adar = 29 in regular, Adar I = 30 in leap
+                8 or 9 => CheshvanOrKislevHas30(year, month),
+                _ => false,
+            };
+            Day30Cache[(year, month)] = has;
+            return has;
+        }
+
+        private static bool IsHebrewLeapYear(int year)
+        {
+            // Standard 19-year metonic cycle: leap years are positions 3, 6, 8, 11, 14, 17, 19.
+            return ((7 * year) + 1) % 19 < 7;
+        }
+
+        // Cheshvan (8) and Kislev (9) are the variable-length months. Cheshvan is 30
+        // only in "complete" (shleimah) years; Kislev is 30 in regular or complete.
+        // We probe the year length by measuring days between successive Tishrei 1's —
+        // both calls are guaranteed-valid Hebrew dates, so they can't trip a native panic.
+        private static bool CheshvanOrKislevHas30(int year, int month)
+        {
+            try
+            {
+                var g1 = HebcalBridge.ConvertFromHebrew(year, 7, 1);
+                var g2 = HebcalBridge.ConvertFromHebrew(year + 1, 7, 1);
+                if (g1 == null || g2 == null || g1.Year == 0 || g2.Year == 0) return true;
+
+                int length = (new DateTime(g2.Year, g2.Month, g2.Day)
+                            - new DateTime(g1.Year, g1.Month, g1.Day)).Days;
+
+                // Possible Hebrew year lengths: 353/383 (deficient), 354/384 (regular), 355/385 (complete).
+                if (month == 8) return length == 355 || length == 385;                  // Cheshvan
+                return length == 354 || length == 355 || length == 384 || length == 385; // Kislev
+            }
+            catch (Exception ex)
+            {
+                SettingsManager.LogError("CheshvanOrKislevHas30", ex);
+                return true; // fail open
+            }
+        }
+
+        // Short-form Hebrew year (e.g. 5786 → "תשפ"ו") - same gershayim convention
+        // as the rest of the app, but without the leading "ה'" thousand prefix.
+        private static string FormatYearShort(int year)
+        {
+            int n = year >= 5000 ? year - 5000 : year;
+            return HebrewNumberFormatter.FormatDay(n);
         }
 
         private static UserEvent CreateNewWithDefaults(DateTime defaultDate)
@@ -103,9 +206,11 @@ namespace ItimHebrewCalendar.Windows
                 GregDatePicker.Date = ev.StartGregorian.Value;
             if (ev.StartHebrew != null)
             {
-                SelectByTag(HebDayCombo, ev.StartHebrew.Day);
                 SelectByTag(HebMonthCombo, ev.StartHebrew.Month);
-                HebYearBox.Value = ev.StartHebrew.Year;
+                SelectByTag(HebYearCombo, ev.StartHebrew.Year);
+                // Month/year both set: refresh day list so ל' shows only if valid, then select.
+                RefreshDayCombo();
+                SelectByTag(HebDayCombo, ev.StartHebrew.Day);
             }
 
             if (ev.StartTime.HasValue)
@@ -170,6 +275,9 @@ namespace ItimHebrewCalendar.Windows
             RecurrenceDetailsPanel.Visibility = none ? Visibility.Collapsed : Visibility.Visible;
             WeekdaysPanel.Visibility = tag == "WeeklyGregorian" ? Visibility.Visible : Visibility.Collapsed;
         }
+
+        private void HebMonthCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshDayCombo();
+        private void HebYearCombo_SelectionChanged(object sender, SelectionChangedEventArgs e) => RefreshDayCombo();
 
         private void OnAddReminder(object sender, RoutedEventArgs e)
         {
@@ -288,9 +396,9 @@ namespace ItimHebrewCalendar.Windows
             {
                 int? day   = TagAsInt(HebDayCombo);
                 int? month = TagAsInt(HebMonthCombo);
-                int year   = (int)HebYearBox.Value;
-                if (!day.HasValue || !month.HasValue || year < 5000) return null;
-                var g = HebcalBridge.ConvertFromHebrew(year, month.Value, day.Value);
+                int? year  = TagAsInt(HebYearCombo);
+                if (!day.HasValue || !month.HasValue || !year.HasValue) return null;
+                var g = HebcalBridge.ConvertFromHebrew(year.Value, month.Value, day.Value);
                 if (g == null || g.Year == 0) return null;
                 return new DateTime(g.Year, g.Month, g.Day);
             }

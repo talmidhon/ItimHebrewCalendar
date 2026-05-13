@@ -68,12 +68,14 @@
                     <Grid x:Name="HebDatePanel" Visibility="Collapsed">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1.2*"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <ComboBox x:Name="HebDayCombo" Grid.Column="0" Margin="0,0,4,0" Header="יום"/>
-                        <ComboBox x:Name="HebMonthCombo" Grid.Column="1" Margin="2,0,2,0" Header="חודש"/>
-                        <NumberBox x:Name="HebYearBox" Grid.Column="2" Margin="4,0,0,0" Header="שנה" SpinButtonPlacementMode="Compact"/>
+                        <ComboBox x:Name="HebDayCombo" Grid.Column="0" Margin="0,0,4,0" HorizontalAlignment="Stretch" Header="יום"/>
+                        <ComboBox x:Name="HebMonthCombo" Grid.Column="1" Margin="2,0,2,0" HorizontalAlignment="Stretch" Header="חודש"
+                                  SelectionChanged="HebMonthCombo_SelectionChanged"/>
+                        <ComboBox x:Name="HebYearCombo" Grid.Column="2" Margin="4,0,0,0" HorizontalAlignment="Stretch" Header="שנה"
+                                  SelectionChanged="HebYearCombo_SelectionChanged"/>
                     </Grid>
                 </StackPanel>
 

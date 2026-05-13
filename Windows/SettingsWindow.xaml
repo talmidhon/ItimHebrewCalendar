@@ -286,7 +286,7 @@
                                       Header="סנכרון ליומן Windows"
                                       OnContent="מופעל - אירועים ללא עוגן הלכתי בלבד"
                                       OffContent="כבוי"/>
-                        <TextBlock Text="אירועים שיש להם תזכורת מבוססת זמן הלכתי לא נסנכרנים, מכיוון שהזמן ההלכתי משתנה מדי יום."
+                        <TextBlock Text="אירועים שיש להם תזכורת מבוססת זמן הלכתי לא מסתנכרנים, מכיוון שהזמן ההלכתי משתנה מדי יום."
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"/>
