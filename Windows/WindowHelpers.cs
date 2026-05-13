@@ -172,6 +172,42 @@ namespace ItimHebrewCalendar.Windows
             appWindow.Move(new PointInt32(x, y));
         }
 
+        // WinUI 3's Window.Activate() respects Windows' anti-focus-stealing rules,
+        // so a tray-triggered window can come up behind whatever app currently owns
+        // the foreground. Attaching to the foreground thread's input queue lifts
+        // that restriction long enough to legitimately call SetForegroundWindow.
+        public static void BringToForeground(Window window)
+        {
+            try
+            {
+                var hWnd = WindowNative.GetWindowHandle(window);
+                if (hWnd == IntPtr.Zero) return;
+
+                if (IsIconic(hWnd))
+                    ShowWindow(hWnd, SW_RESTORE);
+
+                var foreHwnd = GetForegroundWindow();
+                uint foreThread = GetWindowThreadProcessId(foreHwnd, out _);
+                uint ourThread = GetCurrentThreadId();
+
+                bool attached = false;
+                if (foreThread != 0 && foreThread != ourThread)
+                    attached = AttachThreadInput(foreThread, ourThread, true);
+
+                try
+                {
+                    BringWindowToTop(hWnd);
+                    SetForegroundWindow(hWnd);
+                }
+                finally
+                {
+                    if (attached)
+                        AttachThreadInput(foreThread, ourThread, false);
+                }
+            }
+            catch { }
+        }
+
         [StructLayout(LayoutKind.Sequential)]
         private struct POINT { public int X, Y; }
 
@@ -180,6 +216,36 @@ namespace ItimHebrewCalendar.Windows
 
         [DllImport("user32.dll")]
         private static extern uint GetDpiForWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool BringWindowToTop(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool IsIconic(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+        private const int SW_RESTORE = 9;
     }
 
     internal class BackdropHandles : IDisposable

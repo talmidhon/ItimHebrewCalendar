@@ -159,11 +159,13 @@ namespace ItimHebrewCalendar.Windows
             if (_popup != null)
             {
                 _popup.Activate();
+                WindowHelpers.BringToForeground(_popup);
                 return;
             }
             _popup = new CalendarPopup();
             _popup.Closed += (_, _) => _popup = null;
             _popup.Activate();
+            WindowHelpers.BringToForeground(_popup);
         }
 
         public void ShowMainWindow()
@@ -171,16 +173,23 @@ namespace ItimHebrewCalendar.Windows
             if (_mainWindow != null)
             {
                 _mainWindow.Activate();
+                WindowHelpers.BringToForeground(_mainWindow);
                 return;
             }
             _mainWindow = new MainWindow();
             _mainWindow.Closed += (_, _) => _mainWindow = null;
             _mainWindow.Activate();
+            WindowHelpers.BringToForeground(_mainWindow);
         }
 
         private void ShowSettings()
         {
-            if (_settingsWindow != null) { _settingsWindow.Activate(); return; }
+            if (_settingsWindow != null)
+            {
+                _settingsWindow.Activate();
+                WindowHelpers.BringToForeground(_settingsWindow);
+                return;
+            }
             _settingsWindow = new SettingsWindow();
             _settingsWindow.Closed += (_, _) =>
             {
@@ -190,27 +199,45 @@ namespace ItimHebrewCalendar.Windows
                 _popup?.Refresh();
             };
             _settingsWindow.Activate();
+            WindowHelpers.BringToForeground(_settingsWindow);
         }
 
         private void ShowConverter()
         {
-            if (_converterWindow != null) { _converterWindow.Activate(); return; }
+            if (_converterWindow != null)
+            {
+                _converterWindow.Activate();
+                WindowHelpers.BringToForeground(_converterWindow);
+                return;
+            }
             _converterWindow = new ConverterWindow();
             _converterWindow.Closed += (_, _) => _converterWindow = null;
             _converterWindow.Activate();
+            WindowHelpers.BringToForeground(_converterWindow);
         }
 
         private void ShowZmanimWindow()
         {
-            if (_zmanimWindow != null) { _zmanimWindow.Activate(); return; }
+            if (_zmanimWindow != null)
+            {
+                _zmanimWindow.Activate();
+                WindowHelpers.BringToForeground(_zmanimWindow);
+                return;
+            }
             _zmanimWindow = new ZmanimWindow();
             _zmanimWindow.Closed += (_, _) => _zmanimWindow = null;
             _zmanimWindow.Activate();
+            WindowHelpers.BringToForeground(_zmanimWindow);
         }
 
         private void ShowAbout()
         {
-            if (_settingsWindow != null) { _settingsWindow.Activate(); return; }
+            if (_settingsWindow != null)
+            {
+                _settingsWindow.Activate();
+                WindowHelpers.BringToForeground(_settingsWindow);
+                return;
+            }
             _settingsWindow = new SettingsWindow(focusAbout: true);
             _settingsWindow.Closed += (_, _) =>
             {
@@ -220,6 +247,7 @@ namespace ItimHebrewCalendar.Windows
                 _popup?.Refresh();
             };
             _settingsWindow.Activate();
+            WindowHelpers.BringToForeground(_settingsWindow);
         }
 
         public void UpdateIcon()
