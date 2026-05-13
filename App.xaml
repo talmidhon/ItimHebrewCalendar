@@ -8,6 +8,21 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Segmented toggle: ToggleButtons inside a rounded border. The
+                 "Checked" pill highlight is set in code-behind because writing a
+                 full ControlTemplate with VisualStates inline would be noisier. -->
+            <Style x:Key="SegmentedToggleStyle" TargetType="ToggleButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="16,5"/>
+                <Setter Property="MinWidth" Value="64"/>
+                <Setter Property="CornerRadius" Value="12"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

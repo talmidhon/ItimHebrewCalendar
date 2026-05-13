@@ -70,9 +70,9 @@
                         <StackPanel Grid.Column="0" Spacing="4">
                             <TextBlock Text="יום"
                                        Style="{ThemeResource CaptionTextBlockStyle}"/>
-                            <TextBox x:Name="HebDayBox"
-                                     PlaceholderText="א'-ל' או 1-30"
-                                     TextChanged="HebInput_TextChanged"/>
+                            <ComboBox x:Name="HebDayCombo"
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="HebInput_ChangedCombo"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Spacing="4">

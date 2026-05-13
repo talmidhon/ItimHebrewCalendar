@@ -34,6 +34,7 @@ namespace ItimHebrewCalendar.Windows
             menu.Items.Add(new PopupMenuSeparator());
             menu.Items.Add(new PopupMenuItem("פתח חלון מלא", (_, _) => RunOnUI(ShowMainWindow)));
             menu.Items.Add(new PopupMenuItem("הצג לוח שנה", (_, _) => RunOnUI(ShowCalendarPopup)));
+            menu.Items.Add(new PopupMenuItem("אירוע חדש", (_, _) => RunOnUI(ShowNewEvent)));
             menu.Items.Add(new PopupMenuSeparator());
             menu.Items.Add(new PopupMenuItem("ממיר תאריכים", (_, _) => RunOnUI(ShowConverter)));
             menu.Items.Add(new PopupMenuItem("זמני היום", (_, _) => RunOnUI(ShowZmanimWindow)));
@@ -228,6 +229,16 @@ namespace ItimHebrewCalendar.Windows
             _zmanimWindow.Closed += (_, _) => _zmanimWindow = null;
             _zmanimWindow.Activate();
             WindowHelpers.BringToForeground(_zmanimWindow);
+        }
+
+        // Tray right-click shortcut: open the event editor for a brand new event,
+        // anchored to today. Each invocation creates its own editor — we don't
+        // single-instance it, so the user can stack several drafts if they want.
+        private void ShowNewEvent()
+        {
+            var editor = new EventEditorWindow(null, DateTime.Today);
+            editor.Activate();
+            WindowHelpers.BringToForeground(editor);
         }
 
         private void ShowAbout()

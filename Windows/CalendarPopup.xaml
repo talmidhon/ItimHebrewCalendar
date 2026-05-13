@@ -17,6 +17,7 @@
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -34,7 +35,47 @@
             </StackPanel>
         </Grid>
 
-        <Grid x:Name="CalendarView" Grid.Row="1">
+        <Grid Grid.Row="1" Margin="14,4,14,2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="0" Click="OnAddEventClick" Padding="8,4" ToolTipService.ToolTip="הוסף אירוע חדש">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <FontIcon Glyph="&#xE710;" FontSize="11"/>
+                    <TextBlock Text="אירוע חדש" FontSize="12"/>
+                </StackPanel>
+            </Button>
+
+            <Border Grid.Column="2"
+                    CornerRadius="12"
+                    Background="{ThemeResource ControlFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+                    BorderThickness="1"
+                    Padding="2">
+                <StackPanel Orientation="Horizontal" Spacing="2">
+                    <ToggleButton x:Name="DailyViewToggle"
+                                  Content="יומי"
+                                  Style="{StaticResource SegmentedToggleStyle}"
+                                  MinWidth="56"
+                                  Padding="12,3"
+                                  FontSize="12"
+                                  Click="OnSegToggleClick"/>
+                    <ToggleButton x:Name="MonthlyViewToggle"
+                                  Content="חודשי"
+                                  Style="{StaticResource SegmentedToggleStyle}"
+                                  MinWidth="56"
+                                  Padding="12,3"
+                                  FontSize="12"
+                                  IsChecked="True"
+                                  Click="OnSegToggleClick"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="CalendarView" Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -228,7 +269,7 @@
             </Grid>
         </Grid>
 
-        <Grid x:Name="DetailsView" Grid.Row="1" Visibility="Collapsed">
+        <Grid x:Name="DetailsView" Grid.Row="2" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -292,6 +333,88 @@
                                 CornerRadius="8"
                                 Padding="14,4">
                             <StackPanel x:Name="DetailsZmanimPanel"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <Grid x:Name="DailyView" Grid.Row="2" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Merged header: prev arrow | accent date card | next arrow.
+                 Arrows stretch vertically to match the card height. -->
+            <Grid Grid.Row="0" Margin="14,4,14,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Click="OnDailyPrev"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        VerticalAlignment="Stretch"
+                        Width="40"
+                        CornerRadius="8"
+                        Padding="0"
+                        ToolTipService.ToolTip="היום הקודם">
+                    <FontIcon Glyph="&#xE76C;" FontSize="13"/>
+                </Button>
+
+                <Button Grid.Column="1" Click="OnDailyToday"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        CornerRadius="8"
+                        Margin="6,0,6,0"
+                        Padding="14,10"
+                        ToolTipService.ToolTip="חזרה להיום">
+                    <StackPanel Spacing="2" HorizontalAlignment="Center">
+                        <TextBlock x:Name="DailyHeaderHeb"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
+                        <TextBlock x:Name="DailyHeaderGreg"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                   Opacity="0.9"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="2" Click="OnDailyNext"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        VerticalAlignment="Stretch"
+                        Width="40"
+                        CornerRadius="8"
+                        Padding="0"
+                        ToolTipService.ToolTip="היום הבא">
+                    <FontIcon Glyph="&#xE76B;" FontSize="13"/>
+                </Button>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" Padding="14,0,14,12" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="אירועים ביום זה"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                    <StackPanel x:Name="DailyEventsSection" Spacing="6" Visibility="Collapsed">
+                        <StackPanel x:Name="DailyEventsPanel" Spacing="6"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="DailyZmanimSection" Spacing="6">
+                        <TextBlock Text="זמני היום"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                   Margin="0,4,0,2"/>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14,4">
+                            <StackPanel x:Name="DailyZmanimPanel"/>
                         </Border>
                     </StackPanel>
                 </StackPanel>

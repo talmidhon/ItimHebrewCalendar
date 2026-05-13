@@ -4,7 +4,7 @@
 
 # עיתים — ItimHebrewCalendar
 
-לוח שנה עברי ל-Windows עם זמני היום ההלכתיים, בסגנון Fluent Design של Windows 11.
+לוח שנה עברי ל-Windows עם זמני היום בהלכה, בסגנון Fluent Design של Windows 11.
 
 חלופה ללוח השנה המובנה של Microsoft (שלא מציג תאריך עברי), הכוללת:
 
@@ -150,7 +150,7 @@ ItimHebrewCalendar/
 
 ## ספריות חיצוניות
 
-- **[KosherJava Zmanim](https://github.com/KosherJava/zmanim)** — חישוב זמני היום ההלכתיים, מאת Eliyahu Hershfeld. נצרך דרך ה-port ל-.NET של [Yitzchok/Zmanim](https://github.com/Yitzchok/Zmanim) (LGPL).
+- **[KosherJava Zmanim](https://github.com/KosherJava/zmanim)** — חישוב זמני היום בהלכה, מאת Eliyahu Hershfeld. נצרך דרך ה-port ל-.NET של [Yitzchok/Zmanim](https://github.com/Yitzchok/Zmanim) (LGPL).
 - **[hebcal-go](https://github.com/hebcal/hebcal-go)** — לוח שנה, חגים, פרשות וגימטריה, מאת Michael Radwin (GPL-2.0).
 - **[H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon)** — אייקון tray ל-WinUI 3 (MIT).
 - **[Windows App SDK](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/)** — Microsoft (MIT).

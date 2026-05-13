@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -47,12 +48,13 @@ namespace ItimHebrewCalendar.Windows
                 });
             }
 
+            PopulateConverterDayCombo(allow30: true);
+
             try
             {
                 var today = HebcalBridge.Convert(DateTime.Today);
                 if (today != null)
                 {
-                    HebDayBox.Text = HebrewNumberFormatter.FormatDay(today.HebDay);
                     HebYearBox.Text = HebrewNumberFormatter.FormatYear(today.HebYear);
                     for (int i = 0; i < HebMonthCombo.Items.Count; i++)
                     {
@@ -64,6 +66,9 @@ namespace ItimHebrewCalendar.Windows
                         }
                     }
                     if (HebMonthCombo.SelectedIndex < 0) HebMonthCombo.SelectedIndex = 6;
+
+                    RefreshConverterDayCombo();
+                    SelectDayCombo(today.HebDay);
                 }
                 else
                 {
@@ -111,14 +116,78 @@ namespace ItimHebrewCalendar.Windows
         private void HebInput_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_initializing) return;
+            // The year text changed — the (year, month) pair may have flipped between
+            // a 30-day and a 29-day month (Cheshvan / Kislev / Adar), so re-filter days.
+            RefreshConverterDayCombo();
             ConvertHebToGreg();
         }
 
         private void HebInput_ChangedCombo(object sender, SelectionChangedEventArgs e)
         {
             if (_initializing) return;
+            if (ReferenceEquals(sender, HebMonthCombo)) RefreshConverterDayCombo();
             ConvertHebToGreg();
         }
+
+        private void PopulateConverterDayCombo(bool allow30)
+        {
+            int? prev = SelectedDayTag();
+            int max = allow30 ? 30 : 29;
+
+            // Save/restore so calls during the constructor don't release the
+            // re-entrancy guard prematurely.
+            bool wasInitializing = _initializing;
+            _initializing = true;
+            try
+            {
+                HebDayCombo.Items.Clear();
+                for (int d = 1; d <= max; d++)
+                    HebDayCombo.Items.Add(new ComboBoxItem { Content = HebrewNumberFormatter.FormatDay(d), Tag = d });
+
+                if (prev.HasValue && prev.Value >= 1 && prev.Value <= max)
+                    SelectDayCombo(prev.Value);
+            }
+            finally
+            {
+                _initializing = wasInitializing;
+            }
+        }
+
+        private void RefreshConverterDayCombo()
+        {
+            int month = 0;
+            if (HebMonthCombo.SelectedItem is ComboBoxItem item && item.Tag is int m) month = m;
+            int? year = HebrewNumberParser.ParseYear(HebYearBox.Text);
+
+            // No usable year yet — default to allowing all 30 days; conversion will validate.
+            if (month < 1 || !year.HasValue)
+            {
+                PopulateConverterDayCombo(allow30: true);
+                return;
+            }
+            PopulateConverterDayCombo(allow30: MonthHasDay30(year.Value, month));
+        }
+
+        private int? SelectedDayTag()
+        {
+            if (HebDayCombo.SelectedItem is ComboBoxItem ci && ci.Tag is int d) return d;
+            return null;
+        }
+
+        private void SelectDayCombo(int day)
+        {
+            for (int i = 0; i < HebDayCombo.Items.Count; i++)
+            {
+                if (HebDayCombo.Items[i] is ComboBoxItem ci && ci.Tag is int d && d == day)
+                {
+                    HebDayCombo.SelectedIndex = i;
+                    return;
+                }
+            }
+        }
+
+        private static bool MonthHasDay30(int year, int month) =>
+            EventEditorWindow.MonthHasDay30(year, month);
 
         private void ConvertGregToHeb()
         {
@@ -151,9 +220,9 @@ namespace ItimHebrewCalendar.Windows
             {
                 ErrorBar.IsOpen = false;
 
-                var dayParsed = HebrewNumberParser.Parse(HebDayBox.Text);
-                if (dayParsed == null) return; // stay silent while the user is typing
-                int day = dayParsed.Value;
+                int? dayTag = SelectedDayTag();
+                if (dayTag == null) return; // user hasn't picked a day yet
+                int day = dayTag.Value;
                 var yearParsed = HebrewNumberParser.ParseYear(HebYearBox.Text);
                 if (yearParsed == null) return;
                 int year = yearParsed.Value;

@@ -117,7 +117,7 @@
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </StackPanel>
-                        <TextBlock Text="המיקום משפיע על חישוב זמני היום ההלכתיים ועל זמני הדלקת הנרות."
+                        <TextBlock Text="המיקום משפיע על חישוב זמני היום בהלכה ועל זמני הדלקת הנרות."
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                    TextWrapping="Wrap"/>
@@ -241,6 +241,80 @@
                     </StackPanel>
                 </Expander>
 
+                <Expander Header="תצוגות ברירת מחדל"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch">
+                    <StackPanel Spacing="10" Padding="4,8">
+                        <ComboBox x:Name="DefaultMainViewCombo"
+                                  Header="חלון ראשי"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="חודשי" Tag="Monthly"/>
+                            <ComboBoxItem Content="יומי" Tag="Daily"/>
+                        </ComboBox>
+                        <ComboBox x:Name="DefaultTrayViewCombo"
+                                  Header="חלונית ה-Tray"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBoxItem Content="חודשי" Tag="Monthly"/>
+                            <ComboBoxItem Content="יומי" Tag="Daily"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="תזכורות לזמני היום"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch">
+                    <StackPanel Spacing="8" Padding="4,8">
+                        <TextBlock Text="קבל התראה כשמגיע זמן הלכתי מסוים, ללא קשר לאירועים ביומן."
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"/>
+                        <StackPanel x:Name="StandaloneRemindersPanel" Spacing="6"/>
+                        <Button Click="OnAddStandaloneReminder" HorizontalAlignment="Stretch">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE710;" FontSize="12"/>
+                                <TextBlock Text="הוסף תזכורת לזמן הלכתי"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Expander>
+
+                <Expander Header="אירועים, סנכרון וייצוא"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Stretch">
+                    <StackPanel Spacing="10" Padding="4,8">
+                        <ToggleSwitch x:Name="WindowsCalendarSyncToggle"
+                                      Header="סנכרון ליומן Windows"
+                                      OnContent="מופעל - אירועים ללא עוגן הלכתי בלבד"
+                                      OffContent="כבוי"/>
+                        <TextBlock Text="אירועים שיש להם תזכורת מבוססת זמן הלכתי לא מסתנכרנים, מכיוון שהזמן ההלכתי משתנה מדי יום."
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Click="OnExportIcs" HorizontalAlignment="Stretch" Margin="0,0,4,0">
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                    <FontIcon Glyph="&#xE74E;" FontSize="12"/>
+                                    <TextBlock Text="ייצוא ל-ICS"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="1" Click="OnImportIcs" HorizontalAlignment="Stretch" Margin="4,0,0,0">
+                                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                    <FontIcon Glyph="&#xE8B5;" FontSize="12"/>
+                                    <TextBlock Text="ייבוא מ-ICS"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                        <TextBlock x:Name="IcsStatusText"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Expander>
+
                 <Expander x:Name="AboutExpander"
                           Header="אודות"
                           HorizontalAlignment="Stretch"
@@ -303,7 +377,7 @@
                                        Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
                             <StackPanel Spacing="1">
-                                <TextBlock Text="זמני היום ההלכתיים: KosherJava Zmanim (ברירת מחדל)"
+                                <TextBlock Text="זמני היום בהלכה: KosherJava Zmanim (ברירת מחדל)"
                                            Style="{ThemeResource BodyTextBlockStyle}"/>
                                 <TextBlock Text="מאת Eliyahu Hershfeld · פורק ל-.NET מאת Yitzchok ברישיון LGPL"
                                            Style="{ThemeResource CaptionTextBlockStyle}"

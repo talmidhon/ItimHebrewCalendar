@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using ItimHebrewCalendar.Models;
@@ -19,7 +21,7 @@ namespace ItimHebrewCalendar.Windows
         private CalendarDay? _selectedDay;
         private BackdropHandles? _backdrop;
 
-        private const int BaseHeight = 680;
+        private const int BaseHeight = 730;
         private const int OmerExtraHeight = 32;
         private const int AfterSunsetExtraHeight = 32;
         private const int TempleExtraHeight = 32;
@@ -28,6 +30,10 @@ namespace ItimHebrewCalendar.Windows
         private Brush? _defaultTodayCardBrush;
         private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush SunsetCardBrush =
             new(global::Windows.UI.Color.FromArgb(255, 0xE0, 0x55, 0x10));
+
+        private readonly HashSet<DateTime> _datesWithUserEvents = new();
+        private DateTime _dailyDate = DateTime.Today;
+        private bool _viewModeReady;
 
         public MainWindow()
         {
@@ -48,13 +54,44 @@ namespace ItimHebrewCalendar.Windows
             ApplyHeight(BaseHeight);
             WindowHelpers.CenterOnScreen(this);
 
+            // Honor default view from settings without triggering the change handler twice.
+            if (App.Settings.DefaultMainView == CalendarViewMode.Daily)
+            {
+                DailyViewToggle.IsChecked = true;
+                MonthlyViewToggle.IsChecked = false;
+            }
+            else
+            {
+                MonthlyViewToggle.IsChecked = true;
+                DailyViewToggle.IsChecked = false;
+            }
+            UpdateSegmentedHighlight();
+            _viewModeReady = true;
+            ApplyViewMode();
+
             Refresh();
+
+            EventsRepository.Changed += OnEventsChanged;
 
             Closed += (_, _) =>
             {
+                EventsRepository.Changed -= OnEventsChanged;
                 _backdrop?.Dispose();
                 _backdrop = null;
             };
+        }
+
+        private void OnEventsChanged()
+        {
+            try
+            {
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    Refresh();
+                    if (DailyViewToggle?.IsChecked == true) RefreshDaily();
+                });
+            }
+            catch { }
         }
 
         public void Refresh()
@@ -110,6 +147,7 @@ namespace ItimHebrewCalendar.Windows
                     settings.UseIsraeliHolidays, settings.ShowModernHolidays);
                 if (month == null || month.Days.Count == 0) return;
 
+                BuildUserEventDateIndex(month);
                 DrawMonthHeader(month);
                 DrawDaysGrid(month, settings.ShowGregorianInCalendar);
 
@@ -260,6 +298,20 @@ namespace ItimHebrewCalendar.Windows
                 });
             }
 
+            if (_datesWithUserEvents.Contains(day.Date.Date))
+            {
+                var dot = new Ellipse
+                {
+                    Width = 6, Height = 6,
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Margin = new Thickness(0, 0, 2, 0),
+                    Fill = isToday ? CellTheme.TextOnAccent() : CellTheme.AccentBackground(isDark)
+                };
+                ToolTipService.SetToolTip(dot, "אירוע אישי ביום זה");
+                sp.Children.Add(dot);
+            }
+
             border.Child = sp;
             border.PointerReleased += (_, _) => SelectDay(day);
             border.PointerEntered += (s, _) =>
@@ -295,8 +347,43 @@ namespace ItimHebrewCalendar.Windows
                 EventsSection = DetailsEventsSection,
                 EventsPanel = DetailsEventsPanel,
                 ZmanimSection = DetailsZmanimSection,
-                ZmanimPanel = DetailsZmanimPanel
+                ZmanimPanel = DetailsZmanimPanel,
+                OnEditUserEvent = ev =>
+                {
+                    var editor = new EventEditorWindow(ev, day.Date, () =>
+                    {
+                        BuildUserEventDateIndex(null);
+                        SelectDay(day);
+                    });
+                    editor.Activate();
+                }
             });
+        }
+
+        private void BuildUserEventDateIndex(MonthlyCalendar? month)
+        {
+            _datesWithUserEvents.Clear();
+            try
+            {
+                DateTime from, to;
+                if (month != null && month.Days.Count > 0)
+                {
+                    from = month.Days[0].Date.Date;
+                    to   = month.Days[^1].Date.Date;
+                }
+                else
+                {
+                    from = DateTime.Today.AddDays(-31);
+                    to   = DateTime.Today.AddDays(62);
+                }
+                foreach (var ev in EventsRepository.All)
+                    foreach (var occ in EventOccurrenceExpander.Expand(ev, from, to))
+                        _datesWithUserEvents.Add(occ.Date);
+            }
+            catch (Exception ex)
+            {
+                SettingsManager.LogError("MainWindow.BuildUserEventDateIndex", ex);
+            }
         }
 
         private void ApplyHeight(int height)
@@ -352,6 +439,138 @@ namespace ItimHebrewCalendar.Windows
                 App.Tray?.UpdateIcon();
             };
             win.Activate();
+        }
+
+        // ─── Daily view ────────────────────────────────────────────────────────────
+
+        private void OnSegToggleClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ToggleButton clicked) return;
+
+            // Enforce mutual exclusion. If the user clicked the already-active one,
+            // re-check it (don't allow neither-selected).
+            if (clicked == DailyViewToggle)
+            {
+                DailyViewToggle.IsChecked = true;
+                MonthlyViewToggle.IsChecked = false;
+            }
+            else
+            {
+                MonthlyViewToggle.IsChecked = true;
+                DailyViewToggle.IsChecked = false;
+            }
+
+            UpdateSegmentedHighlight();
+            if (_viewModeReady) ApplyViewMode();
+        }
+
+        private void UpdateSegmentedHighlight()
+        {
+            var accent = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
+            var onAccent = (Brush)Application.Current.Resources["TextOnAccentFillColorPrimaryBrush"];
+            var fg = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
+
+            bool dailyOn = DailyViewToggle.IsChecked == true;
+            DailyViewToggle.Background   = dailyOn ? accent : new SolidColorBrush(global::Windows.UI.Color.FromArgb(0,0,0,0));
+            DailyViewToggle.Foreground   = dailyOn ? onAccent : fg;
+            MonthlyViewToggle.Background = !dailyOn ? accent : new SolidColorBrush(global::Windows.UI.Color.FromArgb(0,0,0,0));
+            MonthlyViewToggle.Foreground = !dailyOn ? onAccent : fg;
+        }
+
+        private void ApplyViewMode()
+        {
+            bool daily = DailyViewToggle.IsChecked == true;
+            DailyContentGrid.Visibility   = daily ? Visibility.Visible : Visibility.Collapsed;
+            MonthlyContentGrid.Visibility = daily ? Visibility.Collapsed : Visibility.Visible;
+            if (daily)
+            {
+                _dailyDate = _halachicTodayDate;
+                RefreshDaily();
+            }
+        }
+
+        private void OnAddEventClick(object sender, RoutedEventArgs e)
+        {
+            var defaultDate = (DailyViewToggle.IsChecked == true)
+                ? _dailyDate
+                : (_selectedDay?.Date ?? DateTime.Today);
+            var editor = new EventEditorWindow(null, defaultDate, () =>
+            {
+                if (DailyViewToggle.IsChecked == true) RefreshDaily();
+                else Refresh();
+            });
+            editor.Activate();
+        }
+
+        private void OnDailyPrev(object sender, RoutedEventArgs e)
+        {
+            _dailyDate = _dailyDate.AddDays(-1);
+            RefreshDaily();
+        }
+
+        private void OnDailyNext(object sender, RoutedEventArgs e)
+        {
+            _dailyDate = _dailyDate.AddDays(+1);
+            RefreshDaily();
+        }
+
+        private void OnDailyToday(object sender, RoutedEventArgs e)
+        {
+            _dailyDate = _halachicTodayDate;
+            RefreshDaily();
+        }
+
+        private void RefreshDaily()
+        {
+            try
+            {
+                var ci = CultureInfo.GetCultureInfo("he-IL");
+                var hd = HebcalBridge.Convert(_dailyDate);
+                if (hd == null) return;
+
+                var headerHeb = $"{HebrewNumberFormatter.FormatDay(hd.HebDay)} ב{hd.MonthName} {HebrewNumberFormatter.FormatYear(hd.HebYear)}";
+                var headerGreg = _dailyDate.ToString("d בMMMM yyyy", ci);
+                DailyHeaderHeb.Text = headerHeb;
+                DailyHeaderGreg.Text = headerGreg;
+                DailyDow.Text  = _dailyDate.ToString("dddd", ci);
+
+                // Build a CalendarDay-like wrapper using hebcal's monthly data so events are populated.
+                var settings = App.Settings;
+                var monthData = HebcalBridge.GetMonth(_dailyDate.Year, _dailyDate.Month,
+                    settings.UseIsraeliHolidays, settings.ShowModernHolidays);
+                CalendarDay? dayData = null;
+                if (monthData != null)
+                {
+                    dayData = monthData.Days.FirstOrDefault(d =>
+                        d.GregYear == _dailyDate.Year && d.GregMonth == _dailyDate.Month && d.GregDay == _dailyDate.Day);
+                }
+                dayData ??= new CalendarDay
+                {
+                    GregYear = _dailyDate.Year, GregMonth = _dailyDate.Month, GregDay = _dailyDate.Day,
+                    HebYear = hd.HebYear, HebMonth = hd.HebMonth, HebDay = hd.HebDay,
+                    HebDayStr = HebrewNumberFormatter.FormatDay(hd.HebDay),
+                    HebMonthName = hd.MonthName,
+                    DayOfWeek = (int)_dailyDate.DayOfWeek,
+                    Events = new List<CalendarEvent>()
+                };
+
+                DayDetailsRenderer.Render(dayData, new DayDetailsRenderer.Targets
+                {
+                    EventsSection = DailyEventsSection,
+                    EventsPanel = DailyEventsPanel,
+                    ZmanimSection = DailyZmanimSection,
+                    ZmanimPanel = DailyZmanimPanel,
+                    OnEditUserEvent = ev =>
+                    {
+                        var editor = new EventEditorWindow(ev, _dailyDate, RefreshDaily);
+                        editor.Activate();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                SettingsManager.LogError("MainWindow.RefreshDaily", ex);
+            }
         }
     }
 }

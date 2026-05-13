@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -6,6 +7,12 @@ using ItimHebrewCalendar.Models;
 
 namespace ItimHebrewCalendar.Services
 {
+    public enum CalendarViewMode
+    {
+        Monthly,
+        Daily
+    }
+
     [Flags]
     public enum ZmanimDisplay
     {
@@ -75,6 +82,20 @@ namespace ItimHebrewCalendar.Services
 
         [JsonConverter(typeof(JsonStringEnumConverter))]
         public ZmanimSource ZmanimSource { get; set; } = ZmanimSource.KosherJava;
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public CalendarViewMode DefaultMainView { get; set; } = CalendarViewMode.Monthly;
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public CalendarViewMode DefaultTrayView { get; set; } = CalendarViewMode.Monthly;
+
+        public List<StandaloneZmanReminder> StandaloneZmanReminders { get; set; } = new();
+
+        public bool WindowsCalendarSyncEnabled { get; set; } = false;
+
+        public int IcsExportMonthsAhead { get; set; } = 12;
+
+        public int MissedReminderLookbackHours { get; set; } = 24;
 
         public LocationInfo GetEffectiveLocation()
         {

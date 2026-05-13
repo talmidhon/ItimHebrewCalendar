@@ -42,6 +42,10 @@ namespace ItimHebrewCalendar.Windows
             public StackPanel? EventsPanel { get; set; }
             public FrameworkElement? ZmanimSection { get; set; }
             public StackPanel? ZmanimPanel { get; set; }
+
+            // Optional user-event integration. When OnEditUserEvent is set, the renderer
+            // also lists user events for the day and makes them clickable to edit.
+            public Action<UserEvent>? OnEditUserEvent { get; set; }
         }
 
         public static void Render(CalendarDay day, Targets t)
@@ -59,18 +63,43 @@ namespace ItimHebrewCalendar.Windows
             RenderZmanim(day, t);
         }
 
+        public static List<EventOccurrence> GetUserEventsForDate(DateTime date)
+        {
+            var list = new List<EventOccurrence>();
+            try
+            {
+                foreach (var ev in EventsRepository.All)
+                    foreach (var occ in EventOccurrenceExpander.Expand(ev, date.Date, date.Date))
+                        list.Add(occ);
+                list.Sort((a, b) =>
+                {
+                    var ta = a.Event.StartTime ?? TimeSpan.Zero;
+                    var tb = b.Event.StartTime ?? TimeSpan.Zero;
+                    return ta.CompareTo(tb);
+                });
+            }
+            catch (Exception ex)
+            {
+                SettingsManager.LogError("DayDetailsRenderer.GetUserEventsForDate", ex);
+            }
+            return list;
+        }
+
         private static void RenderEvents(CalendarDay day, Targets t)
         {
             if (t.EventsPanel == null) return;
             t.EventsPanel.Children.Clear();
 
-            if (day.Events.Count == 0)
+            bool any = false;
+
+            // User events first (more personal / actionable), then calendar events.
+            var userEvents = GetUserEventsForDate(day.Date);
+            foreach (var occ in userEvents)
             {
-                if (t.EventsSection != null) t.EventsSection.Visibility = Visibility.Collapsed;
-                return;
+                t.EventsPanel.Children.Add(BuildUserEventCard(occ.Event, t.OnEditUserEvent));
+                any = true;
             }
 
-            bool any = false;
             foreach (var ev in day.Events)
             {
                 if (string.IsNullOrEmpty(ev.Description)) continue;
@@ -102,6 +131,83 @@ namespace ItimHebrewCalendar.Windows
 
             if (t.EventsSection != null)
                 t.EventsSection.Visibility = any ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private static Border BuildUserEventCard(UserEvent ev, Action<UserEvent>? onEdit)
+        {
+            var sp = new StackPanel { Spacing = 2 };
+
+            var titleRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            titleRow.Children.Add(new FontIcon
+            {
+                Glyph = "",
+                FontSize = 12,
+                Foreground = (Brush)Application.Current.Resources["AccentTextFillColorPrimaryBrush"],
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            titleRow.Children.Add(new TextBlock
+            {
+                Text = ev.Title,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                FontSize = 14,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+            sp.Children.Add(titleRow);
+
+            if (ev.StartTime.HasValue)
+            {
+                var sub = ev.StartTime.Value.ToString(@"hh\:mm");
+                if (ev.Duration.HasValue)
+                    sub += " · " + ev.Duration.Value.TotalMinutes.ToString("0") + " דק'";
+                sp.Children.Add(new TextBlock
+                {
+                    Text = sub,
+                    FontSize = 11,
+                    Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+                });
+            }
+
+            if (!string.IsNullOrEmpty(ev.Description))
+            {
+                sp.Children.Add(new TextBlock
+                {
+                    Text = ev.Description,
+                    FontSize = 12,
+                    TextWrapping = TextWrapping.Wrap,
+                    Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+                });
+            }
+
+            var card = new Border
+            {
+                CornerRadius = new CornerRadius(6),
+                Padding = new Thickness(12, 8, 12, 8),
+                Background = (Brush)Application.Current.Resources["AccentFillColorTertiaryBrush"],
+                BorderBrush = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"],
+                BorderThickness = new Thickness(1),
+                Child = sp
+            };
+
+            if (onEdit != null)
+            {
+                var btn = new Button
+                {
+                    Content = card,
+                    Padding = new Thickness(0),
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    Background = (Brush)Application.Current.Resources["SubtleFillColorTransparentBrush"],
+                    BorderThickness = new Thickness(0)
+                };
+                btn.Click += (_, _) => onEdit(ev);
+                // Wrap the button in a Border so the API contract (Border) is preserved.
+                return new Border
+                {
+                    CornerRadius = new CornerRadius(6),
+                    Child = btn
+                };
+            }
+            return card;
         }
 
         private static void RenderZmanim(CalendarDay day, Targets t)
